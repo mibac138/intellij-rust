@@ -6,5 +6,10 @@
                                 implementationClass="org.rust.toml.CargoTomlCompletionContributor"/>
         <codeInsight.lineMarkerProvider language="TOML"
                                         implementationClass="org.rust.toml.CargoCrateDocLineMarkerProvider"/>
+
+        <localInspection language="TOML" groupName="TOML"
+                         displayName="New dependency version"
+                         enabledByDefault="true" level="WARNING"
+                         implementationClass="org.rust.toml.inspections.CargoTomlNewVersionInspection"/>
     </extensions>
 </idea-plugin>
