@@ -22,8 +22,6 @@ import java.io.IOException
 
 data class SearchResult(val crates: List<CrateDescription>)
 
-data class CrateInfoResult(val crate: CrateDescription)
-
 data class CrateDescription(
     val name: String,
     @SerializedName("max_version")
@@ -36,21 +34,36 @@ val CrateDescription.dependencyLine: String
 fun searchCrate(key: TomlKey): Collection<CrateDescription> {
     if (isUnitTestMode) return MOCK!!
 
-    val name = CompletionUtil.getOriginalElement(key)?.text ?: ""
+    // Stuff like [dependencies.'crate'] can contain single quotes which we need to remove or otherwise the crates API
+    // request would not work
+    val name = CompletionUtil.getOriginalElement(key)?.text?.removeSurrounding("'") ?: ""
     if (name.isEmpty()) return emptyList()
 
     val response = requestCratesIo<SearchResult>(key, "crates?page=1&per_page=20&q=$name&sort=") ?: return emptyList()
     return response.crates
 }
 
-fun getCrateLastVersion(key: TomlKey): String? {
-    if (isUnitTestMode) return MOCK!!.first().maxVersion
+data class CrateFullDescription(
+    val name: String,
+    @SerializedName("max_version")
+    val maxVersion: String,
+    val versions: List<CrateVersionDescription>
+)
 
-    val name = CompletionUtil.getOriginalElement(key)?.text ?: ""
-    if (name.isEmpty()) return null
+data class CrateVersionDescription(val id: Int, val num: String, val yanked: Boolean)
 
-    val response = requestCratesIo<CrateInfoResult>(key, "crates/$name") ?: return null
-    return response.crate.maxVersion
+private class CratesIoApiResponse(val crate: CrateDescription, val versions: List<CrateVersionDescription>)
+
+fun getCrateFullDescription(crateName: TomlKey): CrateFullDescription? =
+// Stuff like [dependencies.'crate'] can contain single quotes which we need to remove or otherwise the crates API
+    // request would not work
+    getCrateFullDescription(crateName, crateName.text.removeSurrounding("'"))
+
+fun getCrateFullDescription(context: PsiElement, name: String): CrateFullDescription? {
+    if (isUnitTestMode) return MOCK2
+
+    val response = requestCratesIo<CratesIoApiResponse>(context, "crates/$name") ?: return null
+    return CrateFullDescription(response.crate.name, response.crate.maxVersion, response.versions)
 }
 
 private inline fun <reified T> requestCratesIo(context: PsiElement, path: String): T? {
@@ -74,6 +87,17 @@ private fun <T> requestCratesIo(context: PsiElement, path: String, cls: Class<T>
 }
 
 private var MOCK: List<CrateDescription>? = null
+private var MOCK2: CrateFullDescription? = null
+
+@TestOnly
+fun withMockedFullCrateDescription(mock: CrateFullDescription, action: () -> Unit) {
+    MOCK2 = mock
+    try {
+        action()
+    } finally {
+        MOCK2 = null
+    }
+}
 
 @TestOnly
 fun withMockedCrateSearch(mock: List<CrateDescription>, action: () -> Unit) {
