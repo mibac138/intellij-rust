@@ -187,7 +187,7 @@ class RsFoldingBuilder : CustomFoldingBuilder(), DumbAware {
 
         private fun isInRangesAlready(ranges: MutableList<TextRange>, element: PsiElement?): Boolean {
             if (element == null) return false
-            return !ranges.filter { x -> x.contains(element.textOffset) }.isEmpty()
+            return ranges.any { x -> element.textOffset in x }
         }
     }
 

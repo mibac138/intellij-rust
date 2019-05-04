@@ -11,7 +11,7 @@ import com.intellij.openapi.components.Storage
 import com.intellij.util.xmlb.XmlSerializerUtil
 import org.rust.ide.folding.RsCodeFoldingSettings
 
-@State(name = "RsCodeFoldingSettings", storages = arrayOf(Storage("editor.codeinsight.xml")))
+@State(name = "RsCodeFoldingSettings", storages = [Storage("editor.codeinsight.xml")])
 class RsCodeFoldingSettingsImpl : RsCodeFoldingSettings(), PersistentStateComponent<RsCodeFoldingSettingsImpl> {
 
     override var collapsibleOneLineMethods: Boolean = true
