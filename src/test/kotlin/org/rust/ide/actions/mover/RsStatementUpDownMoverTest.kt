@@ -492,4 +492,26 @@ class RsStatementUpDownMoverTest : RsStatementUpDownMoverTestBase() {
             1/*caret*/;
         }
     """)
+
+    fun `test down with comment in block`() = moveDown("""
+        fn main() {
+            1;
+            {
+                2;
+                /*caret*/3; // 123
+                4;
+            }
+            5;
+        }
+    """, """
+        fn main() {
+            1;
+            {
+                2;
+                4;
+                /*caret*/3; // 123
+            }
+            5;
+        }
+    """)
 }

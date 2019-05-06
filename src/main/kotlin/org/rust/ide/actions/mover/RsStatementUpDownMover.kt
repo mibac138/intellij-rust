@@ -5,6 +5,7 @@
 
 package org.rust.ide.actions.mover
 
+import com.intellij.psi.PsiComment
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiWhiteSpace
 import org.rust.ide.actions.mover.RsLineMover.Companion.RangeEndpoint
@@ -26,7 +27,8 @@ class RsStatementUpDownMover : RsLineMover() {
         get() = this is RsExpr && parent is RsBlock
 
     override fun findMovableAncestor(psi: PsiElement, endpoint: RangeEndpoint): PsiElement? =
-        psi.ancestors.find { it.elementType in movableItems || it.isBlockExpr }
+        if (psi is PsiComment) psi // Fix for #3548
+        else psi.ancestors.find { it.elementType in movableItems || it.isBlockExpr }
 
     override fun findTargetElement(sibling: PsiElement, down: Boolean): PsiElement? {
         if (isMovingOutOfFunctionBody(sibling, down)) {
