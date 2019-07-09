@@ -1747,6 +1747,24 @@ class RsErrorAnnotatorTest : RsAnnotatorTestBase(RsErrorAnnotator::class.java) {
         }
     """)
 
+    fun `test negative discriminant E0081`() = checkErrors("""
+        #[repr(i8)]
+        enum Dx {
+            LEFT = -1,
+            MIDDLE = 0,
+            RIGHT = 1,
+        }
+    """)
+
+    fun `test bug 4117 E0081`() = checkErrors("""
+        const MAX: u32 = 4294967295;
+        #[repr(u32)]
+        enum Dx {
+            LEFT = MAX - 1,
+            MIDDLE = 0,
+            RIGHT = 1,
+        } 
+    """)
 
     fun `test E0040`() = checkErrors("""
         struct X;

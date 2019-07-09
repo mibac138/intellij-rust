@@ -34,6 +34,8 @@ import org.rust.lang.core.types.type
 import org.rust.lang.utils.RsDiagnostic
 import org.rust.lang.utils.RsErrorCode
 import org.rust.lang.utils.addToHolder
+import org.rust.lang.utils.evaluation.ExprValue
+import org.rust.lang.utils.evaluation.RsConstExprEvaluator
 
 class RsErrorAnnotator : RsAnnotatorBase(), HighlightRangeExtension {
     override fun isForceHighlightParents(file: PsiFile): Boolean = file is RsFile
@@ -120,10 +122,18 @@ class RsErrorAnnotator : RsAnnotatorBase(), HighlightRangeExtension {
 
         var discrCounter = 0L
         val indexToVariantMap = hashMapOf<Long, VariantInfo>()
+        val enum = o.parent as RsEnumItem
+        val discrTy = enum.queryAttributes.reprAttributes
+            .flatMap { it.metaItemArgs?.metaItemList?.asSequence() ?: emptySequence() }
+            .mapNotNull { it.name?.let { TyInteger.fromName(it) } }
+            .lastOrNull()
+            ?: TyInteger.ISize
         for (variant in o.enumVariantList) {
-            val literal = variant.variantDiscriminant?.expr as? RsLitExpr
-            val int = literal?.integerValue
-            val idx = int ?: discrCounter
+            val expr = variant.variantDiscriminant?.expr
+            // expr.type returns TyUnknown for binary exprs in enum variants (`enum X { A = <TyUnknown>1 + 2</> }`) so
+            // we need to help the const evaluator realize we need an int or otherwise the evaluator will return null
+            val exprValue = expr?.let { RsConstExprEvaluator.evaluate(it, discrTy) } as ExprValue.Integer?
+            val idx = exprValue?.value ?: discrCounter
             discrCounter = idx + 1
 
             val previous = indexToVariantMap[idx]
